@@ -33,14 +33,14 @@ void* multi(void* args)
 	{
 		
 		res += orginalData->rowNumbers[count]*orginalData->columnNumbers[i];
-		//cout << "rowValue: " << orginalData->rowNumbers[count] << " Multiplied By: " << orginalData->columnNumbers[i] << " equals: " << res << endl;
+		cout << "rowValue: " << orginalData->rowNumbers[count] << " Multiplied By: " << orginalData->columnNumbers[i] << " equals: " << res << endl;
 		
 		count++;
 		
-		//cout << resPlacement << endl;
+		cout << offset << endl;
 		if ((i == orginalData->numColumns*orginalData->numColumns - 1) && (count == (orginalData->numRows + offset)) && (offset < orginalData->numColumns*orginalData->numColumns - orginalData->numColumns))
 		{
-			//cout << endl << "New Row" << endl << endl;
+			cout << endl << "New Row" << endl << endl;
 			offset = orginalData->numColumns * numRows;
 			count = 0 + offset;
 			numRows++;
@@ -54,14 +54,14 @@ void* multi(void* args)
 		{	
 			orginalData->Result[resPlacement] = res;
 			res = 0;
-			//cout << endl;	
+			cout << endl;	
 			count = 0 + offset;
 			resPlacement++;
 		}
 
 
 	}
-	cout << endl << endl << "Results: Display Matrix C" << endl;
+	/*cout << endl << endl << "Results: Display Matrix C With a single thread" << endl;
 	count = 0;
 	// Displaying matC
    	for (int i = 0; i < orginalData->numColumns*orginalData->numColumns; i++)
@@ -74,8 +74,56 @@ void* multi(void* args)
 			count = 0;
 		}
 
-	}
+	}*/
 	
+}
+
+void* rank2TensorMultPThread(void* args)
+{	
+	
+	struct matrixMultiplicationProps *orginalData = (struct matrixMultiplicationProps*)args;
+
+	// Displaying matA
+	int count = 0;
+	int columnCount = 0;
+	int numRows = 1;
+	int offset = 0;
+	int res = 0;
+	int resPlacement = 0;
+	int i = 0;
+    	cout << "Multiplication" << endl;
+   	for (i = 0; i <= orginalData->numColumns*orginalData->numColumns - 1; i = i + 1)
+	{
+		
+		res += orginalData->rowNumbers[count]*orginalData->columnNumbers[i];
+		cout << "rowValue: " << orginalData->rowNumbers[count] << " Multiplied By: " << orginalData->columnNumbers[i] << " equals: " << res << endl;
+		
+		count++;
+		
+		cout << offset << endl;
+		if ((i == orginalData->numColumns*orginalData->numColumns - 1) && (count == (orginalData->numRows + offset)) && (offset < orginalData->numColumns*orginalData->numColumns - orginalData->numColumns))
+		{
+			cout << endl << "New Row" << endl << endl;
+			offset = orginalData->numColumns * numRows;
+			count = 0 + offset;
+			numRows++;
+			orginalData->Result[resPlacement] = res;
+			resPlacement++;
+			// have to double offset the for loop as i will increment after this which will take it back to 0
+			i = -1;			
+
+		}
+		else if (count == (orginalData->numRows + offset))
+		{	
+			orginalData->Result[resPlacement] = res;
+			res = 0;
+			cout << endl;	
+			count = 0 + offset;
+			resPlacement++;
+		}
+
+
+	}	
 }
 
 int main ( int argc, char* argv[] )
@@ -148,13 +196,28 @@ int main ( int argc, char* argv[] )
 	matProps->numColumns = randomSize;
 	for (int i = 0; i < 1; i++)
 	{	
-		pthread_create(&threads[i], NULL, multi, (void *)matProps);
+		pthread_create(&threads[i], NULL, rank2TensorMultPThread, (void *)matProps);
 
 	}
 
 	for (int i = 0; i < 1; i++)
 	{	
 		pthread_join(threads[i], NULL);
+
+	}
+
+	// Displaying matC
+	count = 0;
+    	cout << endl << endl << "Results: Display Matrix C After threading" << endl;
+   	for (int i = 0; i <= randomSize*randomSize - 1; i++)
+	{
+		cout << matProps->Result[i] << "  ";
+		count++;
+		if (count == randomSize)
+		{
+			cout << endl;
+			count = 0;
+		}
 
 	}
 
