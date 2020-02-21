@@ -6,8 +6,6 @@
 
 using namespace std;
 
-pthread_mutex_t lock;
-
 struct matrixMultiplicationProps{
 	int numRows;
 	int numColumns;
@@ -38,10 +36,6 @@ void* multi(void* args)
 	{	
 		cout << newData->columnNumbers[i] << endl;
 	}
-	
-	
-	
-	
 	
 }
 
@@ -110,7 +104,6 @@ int main ( int argc, char* argv[] )
 
 	// Declare threads
 	pthread_t threads[randomSize*randomSize];
-	pthread_mutex_t count_mutex;
 	
 	// start with row 1
 	int count = 0;
