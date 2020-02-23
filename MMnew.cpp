@@ -6,12 +6,19 @@
 
 using namespace std;
 
+	pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
+
 struct matrixMultiplicationProps{
+	int id = 1;
 	int numRows;
 	int numColumns;
 	int* rowNumbers = NULL;
 	int* columnNumbers = NULL;
 	int* Result = NULL;
+
+	int blockSizeForThread;
+	int startRowOffset;
+	int numRowsEvaluate; // Number of rows to evaluate per thread.
 };
 
 
@@ -19,8 +26,7 @@ void* multi(void* args)
 {	
 	
 	struct matrixMultiplicationProps *orginalData = (struct matrixMultiplicationProps*)args;
-
-	// Displaying matA
+	
 	int count = 0;
 	int columnCount = 0;
 	int numRows = 1;
@@ -38,7 +44,7 @@ void* multi(void* args)
 		count++;
 		
 		cout << offset << endl;
-		if ((i == orginalData->numColumns*orginalData->numColumns - 1) && (count == (orginalData->numRows + offset)) && (offset < orginalData->numColumns*orginalData->numColumns - orginalData->numColumns))
+		if ((i == orginalData->numColumns*orginalData->numColumns - 1) && (count == (orginalData->numRows + offset)) && (offset < orginalData->blockSizeForThread * orginalData->numRows - orginalData->numRows))
 		{
 			cout << endl << "New Row" << endl << endl;
 			offset = orginalData->numColumns * numRows;
@@ -81,16 +87,25 @@ void* multi(void* args)
 void* rank2TensorMultPThread(void* args)
 {	
 	
-	struct matrixMultiplicationProps *orginalData = (struct matrixMultiplicationProps*)args;
 
-	// Displaying matA
-	int count = 0;
+	matrixMultiplicationProps *orginalData = (struct matrixMultiplicationProps*)args;
+	int id = orginalData->id;
+	orginalData->startRowOffset = id*orginalData->blockSizeForThread*orginalData->numRows;
+	
+	id++;
+	orginalData->id = id;
+	
 	int columnCount = 0;
 	int numRows = 1;
-	int offset = 0;
+	int offset = orginalData->startRowOffset;
+	cout << "Offset: " << offset << endl;
 	int res = 0;
-	int resPlacement = 0;
+	int count = offset;
+	int resPlacement = offset;
 	int i = 0;
+	cout << endl << endl <<"Thread:      " << id-1 << "     has been called" << endl;
+	cout << "Offset limit: " << id*orginalData->blockSizeForThread*orginalData->numRows - orginalData->numRows << endl;
+	//cin.get();
     	cout << "Multiplication" << endl;
    	for (i = 0; i <= orginalData->numColumns*orginalData->numColumns - 1; i = i + 1)
 	{
@@ -101,29 +116,50 @@ void* rank2TensorMultPThread(void* args)
 		count++;
 		
 		cout << offset << endl;
-		if ((i == orginalData->numColumns*orginalData->numColumns - 1) && (count == (orginalData->numRows + offset)) && (offset < orginalData->numColumns*orginalData->numColumns - orginalData->numColumns))
+		if ((i == orginalData->numColumns*orginalData->numColumns - 1) && (count == (orginalData->numRows + offset)) && (offset < id*orginalData->blockSizeForThread*orginalData->numRows - orginalData->numRows))
 		{
 			cout << endl << "New Row" << endl << endl;
-			offset = orginalData->numColumns * numRows;
+			offset = offset + (orginalData->numColumns);
 			count = 0 + offset;
 			numRows++;
 			orginalData->Result[resPlacement] = res;
 			resPlacement++;
 			// have to double offset the for loop as i will increment after this which will take it back to 0
-			i = -1;			
-
+			i = -1;	
+			res = 0;
 		}
 		else if (count == (orginalData->numRows + offset))
 		{	
+			cout << "Result Placement: " << resPlacement << "Result: " << res << endl;
 			orginalData->Result[resPlacement] = res;
 			res = 0;
 			cout << endl;	
 			count = 0 + offset;
 			resPlacement++;
 		}
+		
+		
 
 
-	}	
+	}
+
+		cout << endl << endl << "Results: Display Matrix C With a single thread" << endl;
+	count = 0;
+	// Displaying matC
+   	for (int i = 0; i < orginalData->numColumns*orginalData->numColumns; i++)
+	{
+		cout << orginalData->Result[i] << "  ";
+		count++;
+		if (count == orginalData->numColumns)
+		{
+			cout << endl;
+			count = 0;
+		}
+
+	}
+		
+	
+	
 }
 
 int main ( int argc, char* argv[] )
@@ -191,16 +227,22 @@ int main ( int argc, char* argv[] )
 	// block size
 	// should round up so can work for smaller matrices
 	int blockSize = 5;
+	matProps->blockSizeForThread = blockSize;
 	pthread_t threads[randomSize/blockSize];
 	matProps->numRows = randomSize;
 	matProps->numColumns = randomSize;
-	for (int i = 0; i < 1; i++)
+	for (int i = 0; i < randomSize/blockSize; i++)
 	{	
+		//matProps->id = i;
+		//cout << i << endl;
+		
+		//matProps->startRowOffset = i*blockSize*randomSize;
 		pthread_create(&threads[i], NULL, rank2TensorMultPThread, (void *)matProps);
+		//cin.get();
 
 	}
 
-	for (int i = 0; i < 1; i++)
+	for (int i = 0; i < randomSize/blockSize; i++)
 	{	
 		pthread_join(threads[i], NULL);
 
