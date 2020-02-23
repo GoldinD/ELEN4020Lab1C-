@@ -165,7 +165,7 @@ void* rank2TensorMultPThread(void* args)
 int main ( int argc, char* argv[] )
 {
 	// Randomize length of row and column of the 2d array. N = either 10, 20, 30.
-	int diffSizes[1] = {5};
+	int diffSizes[1] = {13};
 	srand(time(NULL));
 	//int random = rand()%3;
 	int random = 0;
@@ -226,7 +226,14 @@ int main ( int argc, char* argv[] )
 	// Conceded on the 1d array - too much abstraction to think about.
 	// block size
 	// should round up so can work for smaller matrices
-	int blockSize = 5;
+	int blockSize = 3;
+	
+	// Dealing with matrix sizes that cannot deal with the block size selected. Therefore, do a single thread for those matrices.
+	if (randomSize%blockSize != 0)
+	{
+		blockSize = randomSize;
+	}
+
 	matProps->blockSizeForThread = blockSize;
 	pthread_t threads[randomSize/blockSize];
 	matProps->numRows = randomSize;
