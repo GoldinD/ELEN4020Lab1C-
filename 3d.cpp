@@ -2,7 +2,7 @@
 #include <vector>
 #include <pthread.h>	
 #include <typeinfo>
-
+#include <iomanip>
 
 using namespace std;
 
@@ -10,7 +10,6 @@ struct matrixMultiplicationProps{
 	int id = 1;
 	int numRows;
 	int numColumns;
-	//int depth;
 	int* rowNumbers = NULL;
 	int* columnNumbers = NULL;
 	int* Result = NULL;
@@ -22,167 +21,75 @@ struct matrixMultiplicationProps{
 	int numRowsEvaluate; // Number of rows to evaluate per thread.
 };
 
-
-void* multi(void* args)
-{	
-	
-	struct matrixMultiplicationProps *orginalData = (struct matrixMultiplicationProps*)args;
-	int count = 0;
-	int columnCount = 0;
-	int numRows = 1;
-	int offset = 0;
-	int res = 0;
-	int resPlacement = 0;
-	int i = 0;
-    	cout << "Multiplication" << endl;
-   	for (i = 0; i <= orginalData->numColumns*orginalData->numColumns - 1; i++)
-	{
-		
-		res += orginalData->rowNumbers[count]*orginalData->columnNumbers[i];
-		cout << "rowValue: " << orginalData->rowNumbers[count] << " Multiplied By: " << orginalData->columnNumbers[i] << " equals: " << res << endl;
-		
-		count++;
-		
-		cout << offset << endl;
-		if ((i == orginalData->numColumns*orginalData->numColumns - 1) && (count == (orginalData->numRows + offset)) && (offset < orginalData->blockSizeForThread * orginalData->numRows - orginalData->numRows))
-		{
-			cout << endl << "New Row" << endl << endl;
-			offset = orginalData->numColumns * numRows;
-			count = 0 + offset;
-			numRows++;
-			orginalData->Result[resPlacement] = res;
-			resPlacement++;
-			// have to double offset the for loop as i will increment after this which will take it back to 0
-			i = -1;			
-
-		}
-		else if (count == (orginalData->numRows + offset))
-		{	
-			orginalData->Result[resPlacement] = res;
-			res = 0;
-			cout << endl;	
-			count = 0 + offset;
-			resPlacement++;
-		}
-
-
-	}
-	/*cout << endl << endl << "Results: Display Matrix C With a single thread" << endl;
-	count = 0;
-	// Displaying matC
-   	for (int i = 0; i < orginalData->numColumns*orginalData->numColumns; i++)
-	{
-		cout << orginalData->Result[i] << "  ";
-		count++;
-		if (count == orginalData->numColumns)
-		{
-			cout << endl;
-			count = 0;
-		}
-
-	}*/
-	
-}
-
 void* rank3TensorMultPThread(void* args)
 {	
 	
-
 	matrixMultiplicationProps *orginalData = (struct matrixMultiplicationProps*)args;
 	int id = orginalData->id;
 	orginalData->startRowOffset = id*orginalData->blockSizeForThread*orginalData->numRows;
 
 	id++;
 	orginalData->id = id;
+
 	if (id%orginalData->numRows == 1 && id != 1)
 	{
 		orginalData->startColumnOffset += orginalData->numRows*orginalData->numRows;
 	}
 	
-
-	//int columnCount = 0;
-	//int currentRow = 1;
 	int offset = orginalData->startRowOffset;
-	//cout << "Offset: " << offset << endl;
 	int res = 0;
 	int count = offset;
 	int resPlacement = offset;
-	//cout << endl << endl <<"Thread:      " << id-1 << "     has been called" << endl;
-	//cout << "ColumnOffset limit:                         " << id%orginalData->numRows << endl;
-	//cin.get();
-    	//cout << "Multiplication" << endl;
    	for (int i = orginalData->startColumnOffset; i <= orginalData->startColumnOffset + orginalData->numColumns*orginalData->numColumns - 1; i++)
 	{
-		
 		res += orginalData->rowNumbers[count]*orginalData->columnNumbers[i];
-		//cout << "rowValue: " << orginalData->rowNumbers[count] << " Multiplied By: " << orginalData->columnNumbers[i] << " equals: " << res << endl;
-		
 		count++;
-		
-		//cout << offset << endl;
+
 		if ((i == orginalData->numColumns*orginalData->numColumns - 1) && (count == (orginalData->numRows + offset)) && (offset <orginalData->startRowOffset - orginalData->numRows))
 		{
-			//cout << endl << "New Row" << endl << endl;
 			offset = offset + (orginalData->numColumns);
-			count = 0 + offset;
-			//currentRow++;
+			count = offset;
 			orginalData->Result[resPlacement] = res;
 			resPlacement++;
 			orginalData->placementOfResult = resPlacement;
-			// have to double offset the for loop as i will increment after this which will take it back to 0
-			i = orginalData->startColumnOffset;	
+			i = orginalData->startColumnOffset;// have to double offset the for loop as i will increment after this which will take it back to 0	
 			res = 0;
 		}
+
 		else if (count == (orginalData->numRows + offset))
 		{	
-			//cout << "Result Placement: " << resPlacement << "Result: " << res << endl;
 			orginalData->Result[resPlacement] = res;
 			res = 0;
-			//cout << endl;	
-			count = 0 + offset;
+			count = offset;
 			resPlacement++;
 			orginalData->placementOfResult = resPlacement;
 		}
-
-		
-		
-
-
 	}
-
-		/*cout << endl << endl << "Results: Display Matrix C With a single thread" << endl;
-	count = 0;
-	// Displaying matC
-   	for (int i = 0; i < orginalData->numColumns*orginalData->numColumns; i++)
-	{
-		cout << orginalData->Result[i] << "  ";
-		count++;
-		if (count == orginalData->numColumns)
-		{
-			cout << endl;
-			count = 0;
-		}
-
-	}*/
-		
-	
-	
+	pthread_exit(NULL);	
 }
 
 int main ( int argc, char* argv[] )
 {
-	// Randomize length of row and column of the 2d array. N = either 10, 20, 30.
-	int diffSizes[1] = {100};
-	srand(time(NULL));
-	//int random = rand()%3;
-	int random = 0;
-	int randomSize = diffSizes[random];
-	cout << "Random Size: " << randomSize << endl;
+	int randomSize = 0;
 
+	// User input
+	while (randomSize != 10 | randomSize != 20 | randomSize != 30)
+	{
+		cout << "Please enter either, 10, 20 or 30 for the size of the matrix you want to do multiplication on:";
+		cin >> randomSize;
+		if (randomSize == 10 || randomSize == 20 || randomSize == 30)
+		{
+			cout << endl;
+			break;
+		}
+	}	
+	
+	srand(time(NULL));
+
+	// Create struct
 	struct matrixMultiplicationProps *matProps = (struct matrixMultiplicationProps*) malloc(sizeof(struct matrixMultiplicationProps));
 	matProps->numRows = randomSize;
 	matProps->numColumns = randomSize;
-	//matProps->depth = randomSize;
 	
 	// Declare Matrix A and Matrix B that will be multiplied together later on.
 	matProps->rowNumbers = new int [randomSize*randomSize*randomSize];
@@ -197,18 +104,20 @@ int main ( int argc, char* argv[] )
 		matProps->columnNumbers[i] = rand() % 10; 
 
 	}
+
 	int count = 0;
 	int mat = 0;
 	// Displaying matA
-    	cout << "Display Matrix A" << endl;
+    	cout << "Display 3-D Matrix A" << endl;
+	cout << setw(3);
    	for (int i = 0; i <= randomSize*randomSize*randomSize - 1; i++)
 	{
-		cout << matProps->rowNumbers[i] << "  ";
+		cout << matProps->rowNumbers[i] << setw(3);
 		count++;
 		mat++;
 		if (mat == randomSize*randomSize)
 		{
-			cout << endl << endl << endl;
+			cout << endl;
 			mat = 0;
 		}
 		if (count == randomSize)
@@ -216,42 +125,50 @@ int main ( int argc, char* argv[] )
 			cout << endl;
 			count = 0;
 		}
-
-
 	}
 
-	// Displaying matB
+	// Displaying matB in matrix form
 	count = 0;
-    	cout << "Display Matrix B" << endl;
-   	for (int i = 0; i <= randomSize*randomSize*randomSize - 1; i++)
+	mat = 0;
+	int var = 0;
+	int numMat = 0;
+    	cout << "Display 3-D Matrix B" << endl;
+	cout << setw(3);
+   	for (int i = var; i <= randomSize*randomSize*randomSize - 1; i += randomSize)
 	{
-		cout << matProps->columnNumbers[i] << endl;
+		cout << matProps->columnNumbers[i] << setw(3);
 		count++;
+		mat++;
 		if (count == randomSize)
 		{
 			cout << endl;
 			count = 0;
+			var++;
+			i = var-randomSize;
+			
 		}
-
+		if (mat == randomSize*randomSize)
+		{	
+			numMat++;
+			cout << endl;
+			mat = 0;
+			var = numMat*randomSize*randomSize;
+			i = numMat*randomSize*randomSize - randomSize;
+		}
 	}
 
-	// Could do a2d arry but might affect performance. 1d is O(n) and not O(n^2)
-	// Conceded on the 1d array - too much abstraction to think about.
-	// block size
-	// should round up so can work for smaller matrices
+	// Block size
 	int blockSize = 1;
-
 
 	matProps->blockSizeForThread = blockSize;
 	pthread_t threads[randomSize*randomSize/blockSize];
 	matProps->numRows = randomSize;
 	matProps->numColumns = randomSize;
 
-
+	// Threading
 	for (int i = 0; i < randomSize*randomSize/blockSize; i++)
 	{	
 		pthread_create(&threads[i], NULL, rank3TensorMultPThread, (void *)matProps);
-		//cin.get();
 	}
 
 	for (int i = 0; i < randomSize*randomSize/blockSize; i++)
@@ -263,34 +180,34 @@ int main ( int argc, char* argv[] )
 	// Displaying matC
 	count = 0;
 	int i = 0;
+	int slice = 1;
+	int numRows = 0;
     	cout << endl << endl << "Results: Display Matrix C After threading" << endl;
+	cout << endl << "Slice Number: " << slice << endl << endl;
+	cout << setw(6);
    	for (i = 0; i <= randomSize*randomSize*randomSize - 1; i++)
 	{
-		cout << matProps->Result[i] << "  ";
+		if (numRows == randomSize)
+		{
+			numRows = 0;
+
+			slice++;
+			cout << endl << endl << "Slice Number: " << slice << endl << endl;
+		}
+
+		cout << setw(6) << matProps->Result[i] << setw(6);
 		count++;
+
 		if (count == randomSize)
 		{
+			numRows++;
 			cout << endl;
 			count = 0;
 		}
 
 	}	
-	cout << i << endl;
 
-	// Dealing with matrix sizes that cannot deal with the block size selected. Therefore, do a single thread for those matrices.
-	/* if (randomSize%blockSize != 0)
-	{
-		blockSize = randomSize;
-	}
+	cout << endl << "The number of threads used to compute the matrix multiplication is: " << randomSize*randomSize/blockSize << " with a block size of " << blockSize << endl;
 
-	
-
-
-
-
-
-*/
-
-	
  return 0;
 }
