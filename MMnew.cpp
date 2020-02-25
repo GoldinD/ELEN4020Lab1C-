@@ -3,7 +3,7 @@
 #include <pthread.h>	
 #include <typeinfo>
 #include <iomanip>
-
+#include <time.h> 
 
 using namespace std;
 
@@ -127,6 +127,8 @@ void* rank2TensorMultPThread(void* args)
 
 int main ( int argc, char* argv[] )
 {
+	// Define clock
+	clock_t t;
 	int randomSize = 0;
 
 	// User input
@@ -140,7 +142,7 @@ int main ( int argc, char* argv[] )
 			break;
 		}
 	}	
-	
+
 	srand(time(NULL));
 	// Creat te struct
 	struct matrixMultiplicationProps *matProps = (struct matrixMultiplicationProps*) malloc(sizeof(struct matrixMultiplicationProps));
@@ -233,6 +235,7 @@ int main ( int argc, char* argv[] )
 	pthread_t threads[randomSize/blockSize];
 	matProps->numRows = randomSize;
 	matProps->numColumns = randomSize;
+	t = clock();
 	for (int i = 0; i < randomSize/blockSize; i++)
 	{	
 		//cin.get();
@@ -246,6 +249,7 @@ int main ( int argc, char* argv[] )
 		pthread_join(threads[i], NULL);
 
 	}
+	t = clock() - t;
 
 	// Displaying matC which is the result matrix
 	count = 0;
@@ -264,6 +268,8 @@ int main ( int argc, char* argv[] )
 	}
 
 	cout << endl << "The number of threads used to compute the matrix multiplication is: " << randomSize/blockSize << " with a block size of " << blockSize << endl;
+
+	cout << endl << ((float)t)/CLOCKS_PER_SEC;
 
  return 0;
 }
